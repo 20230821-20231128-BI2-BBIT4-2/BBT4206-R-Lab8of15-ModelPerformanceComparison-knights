@@ -1,0 +1,178 @@
+---
+title: "Business Intelligence Project"
+author: "<Knights>"
+date: "<6 Nov 2023>"
+output:
+  github_document: 
+    toc: yes
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    df_print: default
+editor_options:
+  chunk_output_type: console
+---
+
+# Student Details
+
+|                                              |     |
+|----------------------------------------------|-----|
+| **Student ID Number** && **Student Name**                       
+| 134834 - Emmanuel Kasio| 135356 - Ann Kigera |
+| 122883 - Michelle Guya| 136301 - Ian Nyameta |
+| 135230 - Peter Aringo |
+
+| **BBIT 4.2 Group**                           |  B |
+| **BI Project Group Name/ID (if applicable)** | Knights |
+
+# Setup Chunk
+
+**Note:** the following KnitR options have been set as the global defaults: <BR> `knitr::opts_chunk$set(echo = TRUE, warning = FALSE, eval = TRUE, collapse = FALSE, tidy = TRUE)`.
+
+More KnitR options are documented here <https://bookdown.org/yihui/rmarkdown-cookbook/chunk-options.html> and here <https://yihui.org/knitr/options/>.
+
+# Understanding the Dataset (Exploratory Data Analysis (EDA))
+
+## Loading the Dataset
+
+### Source:
+
+The dataset that was used can be downloaded here: *\<https://github.com/selva86/datasets/blob/master/Sacramento.csv\>*
+
+```{r Install Packages }
+# STEP 1. Install and Load the Required Packages ----
+## readr ----
+if (require("readr")) {
+  require("readr")
+} else {
+  install.packages("readr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## mlbench ----
+if (require("mlbench")) {
+  require("mlbench")
+} else {
+  install.packages("mlbench", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## caret ----
+if (require("caret")) {
+  require("caret")
+} else {
+  install.packages("caret", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## kernlab ----
+if (require("kernlab")) {
+  require("kernlab")
+} else {
+  install.packages("kernlab", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## randomForest ----
+if (require("randomForest")) {
+  require("randomForest")
+} else {
+  install.packages("randomForest", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+```
+
+```{r Load Dataset }
+
+# STEP 2. Load the Dataset ----
+data(iris)
+
+```
+
+```{r Resampling }
+
+# STEP 3. The Resamples Function ----
+## 3.a. Train the Models ----
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+
+### LDA ----
+set.seed(7)
+iris_model_lda <- train(Species ~ ., data = iris,
+                            method = "lda", trControl = train_control)
+
+### CART ----
+set.seed(7)
+iris_model_cart <- train(Species ~ ., data = iris,
+                             method = "rpart", trControl = train_control)
+
+### KNN ----
+set.seed(7)
+iris_model_knn <- train(Species ~ ., data = iris,
+                            method = "knn", trControl = train_control)
+
+### SVM ----
+set.seed(7)
+iris_model_svm <- train(Species ~ ., data = iris,
+                            method = "svmRadial", trControl = train_control)
+
+### Random Forest ----
+set.seed(7)
+iris_model_rf <- train(Species ~ ., data = iris,
+                           method = "rf", trControl = train_control)
+
+## 3.b. Call the `resamples` Function ----
+results <- resamples(list(LDA = iris_model_lda, CART = iris_model_cart,
+                          KNN = iris_model_knn, SVM = iris_model_svm,
+                          RF = iris_model_rf))
+
+```
+
+```{r Displaying Results}
+
+# STEP 4. Display the Results ----
+## 1. Table Summary ----
+# It creates a table with one model per row
+# and its corresponding evaluation metrics displayed per column.
+
+summary(results)
+
+## 2. Box and Whisker Plot ----
+# To visualize the spread of the estimated accuracies
+# for different algorithms and how they relate.
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+bwplot(results, scales = scales)
+
+## 3. Dot Plots ----
+# To show both the mean estimated accuracy as well as the 95% confidence
+# interval (e.g. the range in which 95% of observed scores fell).
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+dotplot(results, scales = scales)
+
+## 4. Scatter Plot Matrix ----
+# To consider whether the predictions from two
+# different algorithms are correlated.
+
+splom(results)
+
+## 5. Pairwise xyPlots ----
+# Pairwise comparison of the accuracy of trial-folds for
+# two models using an xyplot.
+
+# xyplot plots to compare models
+xyplot(results, models = c("LDA", "SVM"))
+
+# or
+# xyplot plots to compare models
+xyplot(results, models = c("SVM", "CART"))
+
+## 6. Statistical Significance Tests ----
+# To calculate the significance of the differences between the
+# metric distributions of the various models.
+
+diffs <- diff(results)
+
+summary(diffs)
+```
